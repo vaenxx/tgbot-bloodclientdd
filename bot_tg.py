@@ -5,22 +5,19 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = '7640581037:AAFENvK_guzBTIOo7w0dn7wDmh0Fwbng1c0'
-WEBHOOK_URL = 'https://1112-149-34-245-4.ngrok-free.app/bot'  # замени на свой актуальный URL ngrok
 
-# Инициализация базы данных
 def init_db():
     conn = sqlite3.connect('bloodclient.db')
     cursor = conn.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS keys
-                    (key TEXT PRIMARY KEY, expiry_date TEXT, login TEXT)''')
+                      (key TEXT PRIMARY KEY, expiry_date TEXT, login TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS admins
-                    (user_id TEXT PRIMARY KEY)''')
+                      (user_id TEXT PRIMARY KEY)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS users
-                    (user_id TEXT PRIMARY KEY, key TEXT)''')
+                      (user_id TEXT PRIMARY KEY, key TEXT)''')
     conn.commit()
     conn.close()
 
-# Генерация нового ключа
 def generate_key(days):
     key = str(uuid.uuid4())
     expiry_date = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
@@ -31,7 +28,6 @@ def generate_key(days):
     conn.close()
     return key
 
-# Проверка, является ли пользователь админом
 def is_admin(user_id):
     conn = sqlite3.connect('bloodclient.db')
     cursor = conn.cursor()
@@ -40,7 +36,6 @@ def is_admin(user_id):
     conn.close()
     return result is not None
 
-# Добавление администратора
 def add_admin(user_id):
     conn = sqlite3.connect('bloodclient.db')
     cursor = conn.cursor()
@@ -53,7 +48,6 @@ def add_admin(user_id):
     finally:
         conn.close()
 
-# Команда /code ex1
 async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args and context.args[0] == 'ex1':
         user_id = update.message.from_user.id
@@ -64,7 +58,6 @@ async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("❗ Используйте: /code ex1")
 
-# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.message.from_user.id):
         await update.message.reply_text("🚫 Только админ может использовать этого бота! Используйте /code ex1 для получения прав.")
@@ -78,7 +71,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("🔧 Выберите действие:", reply_markup=reply_markup)
 
-# Обработка нажатий на кнопки
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -122,7 +114,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response += f"🔑 `{key}`\n{status}\n⏳ До: {expiry_date}\n\n"
         await query.message.reply_text(response, parse_mode="Markdown")
 
-# Обработка текстовых сообщений (для аннулирования ключа)
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.message.from_user.id):
         await update.message.reply_text("🚫 Только админ может использовать эту команду! Используйте /code ex1.")
@@ -142,18 +133,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     init_db()
     application = Application.builder().token(TOKEN).build()
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("code", code))
     application.add_handler(CallbackQueryHandler(button))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    # Запуск webhook
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=8443,
-        webhook_url=WEBHOOK_URL,
-    )
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
