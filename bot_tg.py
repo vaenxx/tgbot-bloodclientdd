@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = '7640581037:AAFENvK_guzBTIOo7w0dn7wDmh0Fwbng1c0'
+TOKEN = ''
 
 def init_db():
     conn = sqlite3.connect('bloodclient.db')
